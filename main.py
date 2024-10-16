@@ -3,7 +3,7 @@ import os
 import time
 import requests
 import threading
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QComboBox, QSpinBox, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QComboBox, QSpinBox, QPushButton, QVBoxLayout, QWidget, QMessageBox
 from PyQt5.QtGui import QIcon
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -66,15 +66,29 @@ class MainWindow(QMainWindow):
             for i in range(nbrloop_value):
                 url = 'http://' + ip_value + ':8000/api/testPOCSAG'
                 payload = {'id': 0}
-                response = requests.put(url, json=payload)
-                print(response.status_code)
-                print(response.text)
-                if response.status_code == 200:
-                    self.response_label.setText(f"Test Réussi, Boucle {i+1}/{nbrloop_value}")
-                    time.sleep(26)
-                else:
-                    self.response_label.setText(f"Test Echoué, Boucle {i+1}/{nbrloop_value}")
+                try:
+                    response = requests.put(url, json=payload)
+                    if response.status_code == 200:
+                        self.response_label.setText(f"Test Réussi, Boucle {i+1}/{nbrloop_value}")
+                        time.sleep(26)
+                    else:
+                        self.response_label.setText(f"Test Echoué, Boucle {i+1}/{nbrloop_value}")
+                except requests.exceptions.ConnectionError:
+                    show_error_message(f"Erreur : Impossible de se connecter à l'IP {ip_value}.")
+                except requests.exceptions.Timeout:
+                    show_error_message("Erreur : La requête a expiré (timeout).")
+                except requests.exceptions.RequestException as e:
+                    show_error_message(f"Erreur lors de la requête : {e}")
                 
+
+def show_error_message(message):
+    # Fonction pour afficher un message d'erreur
+    error_dialog = QMessageBox()
+    error_dialog.setIcon(QMessageBox.Critical)
+    error_dialog.setWindowIcon(QIcon('icon.png'))
+    error_dialog.setWindowTitle("Erreur")
+    error_dialog.setText(message)
+    error_dialog.exec_()
 
 def main():
     app = QApplication(sys.argv)
